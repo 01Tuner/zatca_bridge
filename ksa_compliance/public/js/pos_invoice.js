@@ -31,8 +31,48 @@ frappe.ui.form.on("POS Invoice", {
         __("View")
       );
     }
+    
+    // Add Silent Print button
+    if (Boolean(__TAURI__)) {
+      frm.add_custom_button(
+        __("Silent Print"),
+        function () {
+          silentPrintPosInvoice(frm);
+        }
+      );
+    }
   },
 });
+
+function silentPrintPosInvoice(frm) {
+  if (!frm.doc.name) {
+    frappe.msgprint(__("Please save the document first"));
+    return;
+  }
+  
+  // Generate print URL
+  const print_url = frappe.urllib.get_full_url(
+    `/printview?doctype=${frm.doctype}&name=${frm.doc.name}&format=POS Invoice&no_letterhead=0&letterhead=${frm.doc.letter_head || ''}&settings={}`
+  );
+  
+  // Use Tauri's silent print
+  if (window.__TAURI__ && window.__TAURI__.core) {
+    window.__TAURI__.core
+      .invoke("silent_print", {
+        url: print_url,
+        copies: 1
+      })
+      .then(() => {
+        frappe.show_alert(__("Document sent to printer"));
+      })
+      .catch((err) => {
+        console.error("Silent print failed:", err);
+        frappe.msgprint(__("Print failed: {0}", [err]));
+      });
+  } else {
+    frappe.msgprint(__("Silent print is only available in desktop app"));
+  }
+}
 
 function update_zatca_indicator(frm) {
   // Only proceed if the document exists and isn't new

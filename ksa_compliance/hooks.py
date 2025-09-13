@@ -15,7 +15,7 @@ app_license = 'Copyright (c) 2023 LavaLoon'
 
 # include js, css files in header of web template
 # web_include_css = "/assets/ksa_compliance/css/ksa_compliance.css"
-# web_include_js = "/assets/ksa_compliance/js/ksa_compliance.js"
+# web_include_js = "/assets/ksa_compliance/js/login.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "ksa_compliance/public/scss/website"
@@ -25,7 +25,7 @@ app_license = 'Copyright (c) 2023 LavaLoon'
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+# page_js = {"login": "public/js/login.js"}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -50,7 +50,7 @@ doctype_js = {
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "login"
+home_page = "thunder_login"
 
 # website user home page (by Role)
 # role_home_page = {
@@ -218,7 +218,7 @@ scheduler_events = {'hourly_long': ['ksa_compliance.background_jobs.sync_e_invoi
 
 # Request Events
 # ----------------
-# before_request = ["ksa_compliance.utils.before_request"]
+before_request = ["ksa_compliance.utils.before_request"]
 # after_request = ["ksa_compliance.utils.after_request"]
 
 # Job Events
