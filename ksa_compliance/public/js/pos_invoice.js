@@ -5,8 +5,17 @@ frappe.ui.form.on("POS Invoice", {
         setThunderPosHeader();
         setTauriPrintPolyfill();
     }
-
   },
+  refresh: function (frm) {
+    if(window.RELOAD_THUNDER_POS_HEADER) {
+      window.location.reload();
+      window.RELOAD_THUNDER_POS_HEADER = false;
+    }
+
+    if(Boolean(__TAURI__)) {
+      hideStandardMenu();
+    }
+  }
 });
 
 frappe.ui.form.on("POS Invoice", {
@@ -292,6 +301,10 @@ function setThunderPosHeader() {
   container.innerHTML = `
         <div class="left-section">
             <div class="flex">
+                <button class="btn btn-sm btn-secondary mr-2" onclick="frappe.set_route('point-of-sale')" title="Go to Home">
+                    <i class="fa fa-home"></i>
+                </button>
+                ${window.history.length > 1 && frappe.get_route_str() !== 'point-of-sale' ? '<button class="btn btn-sm btn-secondary mr-2" onclick="window.history.back()" title="Go Back"><i class="fa fa-arrow-left"></i></button>' : ''}
                 <h3 class="ellipsis title-text mb-0 mr-2" title="Point of Sale">Thunder POS</h3>
                 <span class="indicator-pill no-indicator-dot whitespace-nowrap blue">
                     <span>${cur_pos.pos_profile}</span>
@@ -332,6 +345,15 @@ function setThunderPosHeader() {
   stickyHeader.querySelector(".right-section").appendChild(actionMenu);
 
   window.thunder_pos_header_set = true;
+}
+
+function hideStandardMenu () {
+    document.querySelectorAll('header .standard-actions ul.dropdown-menu li.user-action')
+    ?.forEach((li) => {
+      ["Full Screen", "Open Form View"].includes(
+        li.querySelector(".menu-item-label")?.textContent.trim()
+      ) && li.classList.add("hide");
+    });
 }
 
 function setTauriPrintPolyfill() {
