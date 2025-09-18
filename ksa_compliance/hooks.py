@@ -50,7 +50,7 @@ doctype_js = {
 # ----------
 
 # application home page (will override Website Settings)
-home_page = "thunder_login"
+# home_page = "thunder_login"  # Disabled - handled dynamically in before_request
 
 # website user home page (by Role)
 # role_home_page = {
@@ -218,7 +218,6 @@ scheduler_events = {'hourly_long': ['ksa_compliance.background_jobs.sync_e_invoi
 
 # Request Events
 # ----------------
-before_request = ["ksa_compliance.utils.before_request"]
 # after_request = ["ksa_compliance.utils.after_request"]
 
 # Job Events

@@ -37,22 +37,3 @@ def update_zatca_status_in_sales_invoice(doc: Document, method=None):
         )
 
 
-def before_request():
-    """Hook that runs before every request to handle Tauri login redirects"""
-    
-    # Check if this is a Tauri app request
-    user_agent = frappe.get_request_header("User-Agent", "")
-    is_tauri = "tauri" in user_agent.lower() or frappe.get_request_header("X-Tauri-App")
-    
-    # Get the current path
-    path = frappe.request.path if frappe.request else ""
-    
-    # If Tauri is accessing /login, redirect to Thunder login
-    if is_tauri and path == "/login":
-        frappe.local.flags.redirect_location = "/thunder_login"
-        raise frappe.Redirect
-    
-    # If Tauri is accessing root and not logged in, redirect to Thunder login
-    if is_tauri and path == "/" and frappe.session.user == "Guest":
-        frappe.local.flags.redirect_location = "/thunder_login"
-        raise frappe.Redirect
