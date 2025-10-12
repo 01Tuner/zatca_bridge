@@ -56,7 +56,7 @@
                 <cbc:CountrySubentity>{{ seller_details.province | escape }}</cbc:CountrySubentity>
                 {% endif %}
                 <cac:Country>
-                    <cbc:IdentificationCode>{{ seller_details.country_code }}</cbc:IdentificationCode>
+                    <cbc:IdentificationCode>{{ seller_details.country_code | upper }}</cbc:IdentificationCode>
                 </cac:Country>
             </cac:PostalAddress>
             {% if business_settings.company_id %}
@@ -113,7 +113,7 @@
                 {% endif %}
                 {% if buyer_details.country_code %}
                 <cac:Country>
-                    <cbc:IdentificationCode>{{ buyer_details.country_code }}</cbc:IdentificationCode>
+                    <cbc:IdentificationCode>{{ buyer_details.country_code | upper }}</cbc:IdentificationCode>
                 </cac:Country>
                 {% endif %}
             </cac:PostalAddress>

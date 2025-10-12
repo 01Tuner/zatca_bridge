@@ -8,6 +8,10 @@ to a section with the version name.
 
 ## Unreleased Changes
 
+## 0.57.2
+
+* Enforce uppercase country code in Invoice xml
+
 ## 0.57.1
 
 * Fix duplicate invoices entering a resend loop. We weren't properly recognizing the HTTP status code 208 returned in 
