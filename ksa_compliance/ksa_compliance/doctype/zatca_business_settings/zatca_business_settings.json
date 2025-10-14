@@ -335,7 +335,7 @@
    "fieldtype": "Data",
    "label": "CLI Path",
    "read_only_depends_on": "eval:doc.cli_setup==='Automatic'",
-   "default": "/home/zatca-tools/zatca-cli-2.8.0/bin/zatca-cli",
+   "default": "/home/zatca-tools/zatca-cli-2.10.0/bin/zatca-cli",
    "read_only": 1
   },
   {
