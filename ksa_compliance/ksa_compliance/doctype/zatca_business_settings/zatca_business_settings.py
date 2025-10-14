@@ -26,6 +26,7 @@ from ksa_compliance import logger
 from ksa_compliance.invoice import InvoiceMode
 from ksa_compliance.throw import fthrow
 
+import re
 
 class ZATCABusinessSettings(Document):
     # begin: auto-generated types
@@ -114,7 +115,48 @@ class ZATCABusinessSettings(Document):
         )
         invoice_counting_doc.insert(ignore_permissions=True)
 
+    def generate_company_unit_serial(self):
+        """Generate a unique Company Unit Serial number using UUID"""
+        if not self.company_unit_serial:
+            import uuid
+            # Generate a UUID without hyphens
+            new_uuid = uuid.uuid4()
+            # Set the Company Unit Serial in the required format
+            self.company_unit_serial = f"1-ERPNext|2-15|3-{new_uuid}-2"
+
+    def validate_company_unit_serial(self):
+        """Validate the format and uniqueness of Company Unit Serial"""
+        if not self.company_unit_serial:
+            self.generate_company_unit_serial()
+            
+        if not self.company_unit_serial.startswith('1-ERPNext|2-15|3-'):
+            frappe.throw(_('Company Unit Serial must follow the format: 1-ERPNext|2-15|3-{uuid}'))
+            
+        try:
+            uuid_part = self.company_unit_serial.split('|3-')[1]
+            uuid_pattern = re.compile(
+                                r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+                            )
+            # Validate UUID format
+            if not uuid_pattern.match(uuid_part):
+                frappe.throw(_('Company Unit Serial must contain a valid UUID after "3-"'))
+        except Exception as e:
+            frappe.throw(_('Invalid Company Unit Serial format. Must be: 1-ERPNext|2-15|3-{uuid}'))
+            
+        # Check for uniqueness
+        existing = frappe.db.exists('ZATCA Business Settings', {
+            'company_unit_serial': self.company_unit_serial,
+            'name': ('!=', self.name)
+        })
+        if existing:
+            frappe.throw(_('Company Unit Serial must be unique. Another record already exists with the same serial number.'))
+
+    def validate(self):
+        self.validate_company_unit_serial()
+
     def before_insert(self):
+        self.validate_company_unit_serial()
+
         if self.automatic_vat_account_configuration == 1:
             # Create Tax Account under Duties and Taxes Account
             tax_account_id = self.create_tax_account()

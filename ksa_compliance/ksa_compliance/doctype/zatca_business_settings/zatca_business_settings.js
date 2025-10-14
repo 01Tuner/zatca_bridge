@@ -6,6 +6,14 @@ frappe.ui.form.on("ZATCA Business Settings", {
     refresh: function (frm) {
         add_other_ids_if_new(frm);
         filter_company_address(frm);
+        
+        // Generate Company Unit Serial for new documents
+        if (frm.is_new() && !frm.doc.company_unit_serial) {
+            // Generate a UUID
+            const uuid = crypto.randomUUID();
+            frm.set_value('company_unit_serial', `1-ERPNext|2-15|3-${uuid}`);
+        }
+
     },
     company: function (frm) {
         filter_company_address(frm);
@@ -219,4 +227,16 @@ function add_other_ids_if_new(frm) {
         );
         frm.set_value("other_ids", seller_id_list);
     }
+}
+
+
+// Polyfill for crypto.randomUUID()
+if (!crypto.randomUUID) {
+  crypto.randomUUID = function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
 }
