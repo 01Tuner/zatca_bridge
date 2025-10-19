@@ -335,8 +335,7 @@
    "fieldtype": "Data",
    "label": "CLI Path",
    "read_only_depends_on": "eval:doc.cli_setup==='Automatic'",
-   "default": "/home/zatca-tools/zatca-cli-2.10.0/bin/zatca-cli",
-   "read_only": 1
+   "default": "/home/zatca-tools/zatca-cli-2.10.0/bin/zatca-cli"
   },
   {
    "depends_on": "eval:doc.zatca_cli_path",
@@ -345,7 +344,7 @@
    "label": "Check ZATCA CLI"
   },
   {
-   "default": "Automatic",
+   "default": "Manual",
    "description": "<p>The ZATCA CLI is an open-source tool used to generate CSRs, validate, and sign XML sales invoices sent to ZATCA.</p>\n\n<p><b>Automatic:</b> One-click setup downloads the CLI and Java 11 runtime from GitHub by default (configurable)</p>\n<p><b>Manual:</b> You manually deploy the CLI on the server as well as a Java 11 runtime and configure the path to the deployed CLI</p>",
    "fieldname": "cli_setup",
    "fieldtype": "Select",
@@ -381,8 +380,7 @@
    "fieldtype": "Data",
    "label": "Java Home",
    "read_only_depends_on": "eval:doc.cli_setup === 'Automatic'",
-   "default": "/home/zatca-tools/jdk-11",
-   "read_only": 1
+   "default": "/home/zatca-tools/jdk-11"
   },
   {
    "fieldname": "cli_tab",
