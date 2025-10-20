@@ -16,7 +16,7 @@ frappe.ui.form.on('Sales Invoice', {
         });
     },
     async refresh(frm) {
-        await set_zatca_integration_status(frm)
+        // await set_zatca_integration_status(frm)
         await set_zatca_discount_reason(frm)
 
       // Log the current document to the console for debugging
