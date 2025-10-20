@@ -1,12 +1,13 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:{company}-{country}-{currency}",
+ "autoname": "format:{company}-{country}-{currency}-{##}",
  "creation": "2024-01-11 15:31:56.241248",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "tab_break_ljdo",
+  "status",
   "company",
   "company_unit",
   "company_unit_serial",
@@ -34,6 +35,7 @@
   "section_break_muug",
   "other_ids",
   "vat_account_configuration_tab",
+  "column_break_izkt",
   "automatic_vat_account_configuration",
   "linked_tax_account",
   "account_name",
@@ -44,9 +46,10 @@
   "cli_tab",
   "cli_setup",
   "setup_zatca_cli",
-  "check_zatca_cli",
+  "column_break_tsik",
   "zatca_cli_path",
   "java_home",
+  "check_zatca_cli",
   "automatic_setup_configuration_section",
   "override_cli_download_url",
   "override_jre_download_url",
@@ -228,6 +231,7 @@
    "fieldname": "compliance_request_id",
    "fieldtype": "Data",
    "label": "Compliance Request ID",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -245,6 +249,7 @@
    "fieldname": "company_unit_serial",
    "fieldtype": "Data",
    "label": "Company Unit Serial",
+   "no_copy": 1,
    "read_only_depends_on": "eval:frappe.user_roles.indexOf('System Manager') === -1 && doc.production_request_id",
    "reqd": 1
   },
@@ -260,18 +265,21 @@
    "fieldname": "csr",
    "fieldtype": "Small Text",
    "label": "CSR",
+   "no_copy": 1,
    "read_only": 1
   },
   {
    "fieldname": "security_token",
    "fieldtype": "Small Text",
    "label": "Security Token",
+   "no_copy": 1,
    "read_only": 1
   },
   {
    "fieldname": "secret",
    "fieldtype": "Password",
    "label": "Secret",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -288,12 +296,14 @@
    "fieldname": "production_security_token",
    "fieldtype": "Small Text",
    "label": "Production Security Token",
+   "no_copy": 1,
    "read_only": 1
   },
   {
    "fieldname": "production_secret",
    "fieldtype": "Password",
    "label": "Production Secret",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -310,6 +320,7 @@
    "fieldname": "production_request_id",
    "fieldtype": "Data",
    "label": "Production Request ID",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -335,7 +346,8 @@
    "fieldtype": "Data",
    "label": "CLI Path",
    "read_only_depends_on": "eval:doc.cli_setup==='Automatic'",
-   "default": "/home/zatca-tools/zatca-cli-2.10.0/bin/zatca-cli"
+   "default": "/home/zatca-tools/zatca-cli-2.10.0/bin/zatca-cli",
+   "no_copy": 1
   },
   {
    "depends_on": "eval:doc.zatca_cli_path",
@@ -344,14 +356,14 @@
    "label": "Check ZATCA CLI"
   },
   {
-   "default": "Manual",
+   "default": "Automatic",
    "description": "<p>The ZATCA CLI is an open-source tool used to generate CSRs, validate, and sign XML sales invoices sent to ZATCA.</p>\n\n<p><b>Automatic:</b> One-click setup downloads the CLI and Java 11 runtime from GitHub by default (configurable)</p>\n<p><b>Manual:</b> You manually deploy the CLI on the server as well as a Java 11 runtime and configure the path to the deployed CLI</p>",
    "fieldname": "cli_setup",
    "fieldtype": "Select",
    "label": "CLI Setup",
+   "no_copy": 1,
    "options": "Automatic\nManual",
-   "reqd": 1,
-   "hidden": 1
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.cli_setup===\"Automatic\"",
@@ -371,8 +383,7 @@
    "depends_on": "eval:doc.cli_setup==='Automatic'",
    "fieldname": "setup_zatca_cli",
    "fieldtype": "Button",
-   "label": "Download and Set Up ZATCA CLI",
-   "hidden": 1
+   "label": "Download and Set Up ZATCA CLI"
   },
   {
    "description": "<pre style=\"display:inline;\">JAVA_HOME</pre> path used for running the CLI. Leave blank to use the default system Java installation",
@@ -380,7 +391,8 @@
    "fieldtype": "Data",
    "label": "Java Home",
    "read_only_depends_on": "eval:doc.cli_setup === 'Automatic'",
-   "default": "/home/zatca-tools/jdk-11"
+   "default": "/home/zatca-tools/jdk-11",
+   "no_copy": 1
   },
   {
    "fieldname": "cli_tab",
@@ -423,6 +435,7 @@
    "fieldtype": "Percent",
    "label": "Tax Rate",
    "mandatory_depends_on": "eval:doc.automatic_vat_account_configuration === 1",
+   "no_copy": 1,
    "set_only_once": 1
   },
   {
@@ -432,6 +445,7 @@
    "fieldtype": "Select",
    "label": "ZATCA Tax Category",
    "mandatory_depends_on": "eval:doc.automatic_vat_account_configuration === 1",
+   "no_copy": 1,
    "options": "\nStandard rate\nServices outside scope of tax / Not subject to VAT || {manual entry}\nExempt from Tax || Financial services mentioned in Article 29 of the VAT Regulations\nExempt from Tax || Life insurance services mentioned in Article 29 of the VAT Regulations\nExempt from Tax || Real estate transactions mentioned in Article 30 of the VAT Regulations\nExempt from Tax || Qualified Supply of Goods in Duty Free area\nZero rated goods || Export of goods\nZero rated goods || Export of services\nZero rated goods || The international transport of Goods\nZero rated goods || International transport of passengers\nZero rated goods || Services directly connected and incidental to a Supply of international passenger transport\nZero rated goods || Supply of a qualifying means of transport\nZero rated goods || Any services relating to Goods or passenger transportation as defined in article twenty five of these Regulations\nZero rated goods || Medicines and medical equipment\nZero rated goods || Qualifying metals\nZero rated goods || Private education to citizen\nZero rated goods || Private healthcare to citizen\nZero rated goods || Supply of qualified military goods",
    "set_only_once": 1
   },
@@ -440,6 +454,7 @@
    "fieldname": "linked_tax_account",
    "fieldtype": "Link",
    "label": "Linked Tax Account",
+   "no_copy": 1,
    "options": "Account",
    "read_only": 1
   },
@@ -450,6 +465,7 @@
    "fieldtype": "Data",
    "label": "Account Name",
    "mandatory_depends_on": "eval:doc.automatic_vat_account_configuration === 1",
+   "no_copy": 1,
    "set_only_once": 1
   },
   {
@@ -459,6 +475,7 @@
    "fieldtype": "Data",
    "label": "Account Number",
    "mandatory_depends_on": "eval:doc.automatic_vat_account_configuration === 1",
+   "no_copy": 1,
    "set_only_once": 1
   },
   {
@@ -474,7 +491,9 @@
    "description": "Creates tax account under Duties and Taxes.\n<br>\nCreates Tax Category, Sales Taxes and Charges Template and Item Wise Tax Template.",
    "fieldname": "automatic_vat_account_configuration",
    "fieldtype": "Check",
-   "label": "Automatic VAT Account Configuration"
+   "label": "Automatic VAT Account Configuration",
+   "no_copy": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_abnh",
@@ -485,17 +504,30 @@
    "description": "Enable in case of multiple branches with different commercial registration number.\n<br>\n<b>Warning:</b> This requires manual configuration of an Accounting Dimension for company branches.",
    "fieldname": "enable_branch_configuration",
    "fieldtype": "Check",
-   "label": "Enable Branch Configuration",
-   "hidden": 1
+   "label": "Enable Branch Configuration"
   },
   {
    "fieldname": "section_break_muug",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Active\nRevoked"
+  },
+  {
+   "fieldname": "column_break_izkt",
+   "fieldtype": "Column Break",
+   "no_copy": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-17 16:51:13.936364",
+ "modified": "2025-05-20 11:06:24.795298",
  "modified_by": "Administrator",
  "module": "KSA Compliance",
  "name": "ZATCA Business Settings",
@@ -517,7 +549,16 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Active"
+  },
+  {
+   "color": "Red",
+   "title": "Revoked"
+  }
+ ],
  "title_field": "company",
  "track_changes": 1
 }

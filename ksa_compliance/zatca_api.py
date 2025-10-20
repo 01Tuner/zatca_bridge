@@ -185,7 +185,7 @@ def clear_invoice(
     b64_xml = base64.b64encode(invoice_xml.encode()).decode()
     body = {'invoiceHash': invoice_hash, 'uuid': invoice_uuid, 'invoice': b64_xml}
     headers = {
-        'Clearance-Status': '1',
+        'Clearance-Status': '0',
         'Accept-Version': 'V2',
     }
 
@@ -236,7 +236,6 @@ def api_call(
     except HTTPError as e:
         error = error_builder(e.response, e)
         logger.error(f'An HTTP error occurred: {error}')
-        logger.error(f'HTTP error: {e}', exc_info=e)
         if e.response.text:
             logger.info(f'Response: {e.response.text}')
 

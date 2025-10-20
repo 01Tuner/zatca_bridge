@@ -16,11 +16,19 @@ class ZATCAIntegrationLog(Document):
 
         e_invoice_file: DF.Attach | None
         invoice_additional_fields_reference: DF.Link
-        invoice_doctype: DF.Literal['Sales Invoice', 'POS Invoice']
+        invoice_doctype: DF.Literal['Sales Invoice', 'POS Invoice', 'Payment Entry']
         invoice_reference: DF.DynamicLink
         status: DF.Literal[
-            '', 'Pending', 'Resend', 'Accepted with warnings', 'Accepted', 'Rejected', 'Clearance switched off'
+            '',
+            'Pending',
+            'Resend',
+            'Accepted with warnings',
+            'Accepted',
+            'Rejected',
+            'Clearance switched off',
+            'Duplicate',
         ]
+        zatca_http_status_code: DF.Int
         zatca_message: DF.LongText | None
         zatca_status: DF.Data | None
     # end: auto-generated types

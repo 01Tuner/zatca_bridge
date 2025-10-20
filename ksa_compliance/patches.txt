@@ -1,6 +1,7 @@
 [pre_model_sync]
 # Patches added in this section will be executed before doctypes are migrated
 # Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
+ksa_compliance.patches._2025_05_11_add_feedback_links_block # 2025-05-11 14:41
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
@@ -14,6 +15,3 @@ ksa_compliance.patches._2024_07_08_set_siaf_is_latest
 ksa_compliance.patches._2024_08_19_update_old_fatoora_url_in_business_settings #2024-08-19 11:41
 ksa_compliance.patches._2024_09_04_delete_obsolete_print_formats
 ksa_compliance.patches._2024_09_18_migrate_zatca_files_under_site
-ksa_compliance.patches._2025_08_06_add_zatca_status_to_sales_invoice #2025-08-06 Add ZATCA Status column to Sales Invoice and POS Invoice list
-ksa_compliance.patches._2025_08_06_add_einvoice_tab_to_invoices #2025-08-06 Add E-invoice tab to Sales Invoice and POS Invoice forms
-ksa_compliance.patches._2025_08_09_add_clearance_redirect_field #2025-08-09 Add clearance_redirect field to Sales Invoice Additional Fields

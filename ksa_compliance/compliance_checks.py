@@ -181,7 +181,6 @@ def _perform_compliance_for_invoice_type(
     item_id: str,
     tax_category_id: str,
 ) -> _ComplianceResult:
-    # Create and test main invoice
     _report_progress(ft('Creating $type invoice', type=invoice_type), progress)
     invoice = _make_invoice(settings.company, customer_id, item_id, tax_category_id)
     invoice.save()
@@ -196,14 +195,12 @@ def _perform_compliance_for_invoice_type(
     result, details = _check_invoice_compliance(invoice)
     progress += progress_per_step
 
-    # Create a separate base invoice for credit note testing
+    # We need to check the credit note and debit note separately, so we roll back to this save point after checking
+    # the credit note. Otherwise, the debit note ends up with 0 qty for the item (since the credit note returns it)
+    frappe.db.savepoint('before_credit_note')
+
     _report_progress(ft('Creating $type credit note', type=invoice_type), progress)
-    credit_base_invoice = _make_invoice(settings.company, customer_id, item_id, tax_category_id)
-    credit_base_invoice.save()
-    ignore_additional_fields_for_invoice(credit_base_invoice.name)
-    credit_base_invoice.submit()
-    
-    return_invoice = cast(SalesInvoice, make_sales_return(credit_base_invoice.name))
+    return_invoice = cast(SalesInvoice, make_sales_return(invoice.name))
     return_invoice.custom_return_reason = 'Goods returned'
     return_invoice.set_taxes()
     return_invoice.set_missing_values()
@@ -219,14 +216,9 @@ def _perform_compliance_for_invoice_type(
     credit_note_result, credit_note_details = _check_invoice_compliance(return_invoice)
     progress += progress_per_step
 
-    # Create a separate base invoice for debit note testing
+    frappe.db.rollback(save_point='before_credit_note')
     _report_progress(ft('Creating $type debit note', type=invoice_type), progress)
-    debit_base_invoice = _make_invoice(settings.company, customer_id, item_id, tax_category_id)
-    debit_base_invoice.save()
-    ignore_additional_fields_for_invoice(debit_base_invoice.name)
-    debit_base_invoice.submit()
-    
-    debit_invoice = cast(SalesInvoice, make_sales_return(debit_base_invoice.name))
+    debit_invoice = cast(SalesInvoice, make_sales_return(invoice.name))
     debit_invoice.custom_return_reason = 'Goods returned'
     debit_invoice.is_debit_note = True
     debit_invoice.set_taxes()

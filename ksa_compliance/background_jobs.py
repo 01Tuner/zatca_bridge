@@ -56,9 +56,6 @@ def sync_e_invoices(
     while True:
         query = build_query(offset, batch_size)
         additional_field_docs = query.run(as_dict=True)
-
-        logger.info(f'{prefix}Found {len(additional_field_docs)} additional fields to process')
-        
         if not additional_field_docs:
             break
 

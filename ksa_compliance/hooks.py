@@ -11,11 +11,12 @@ app_license = 'Copyright (c) 2023 LavaLoon'
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/ksa_compliance/css/ksa_compliance.css"
-# app_include_js = "/assets/ksa_compliance/js/ksa_compliance.js"
-
+# app_include_js = [
+#     '/assets/ksa_compliance/js/feedback_dialog.js',
+# ]
 # include js, css files in header of web template
 # web_include_css = "/assets/ksa_compliance/css/ksa_compliance.css"
-# web_include_js = "/assets/ksa_compliance/js/login.js"
+# web_include_js = "/assets/ksa_compliance/js/ksa_compliance.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "ksa_compliance/public/scss/website"
@@ -25,7 +26,7 @@ app_license = 'Copyright (c) 2023 LavaLoon'
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"login": "public/js/login.js"}
+# page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -38,7 +39,7 @@ doctype_js = {
     'Branch': 'public/js/branch.js',
     'Sales Invoice': 'public/js/sales_invoice.js',
     'POS Invoice': 'public/js/pos_invoice.js',
-    'POS Closing Entry': 'public/js/pos_closing_entry.js',
+    'Payment Entry': 'public/js/payment_entry.js',
 }
 
 # Svg Icons
@@ -50,7 +51,7 @@ doctype_js = {
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "thunder_login"  # Disabled - handled dynamically in before_request
+# home_page = "login"
 
 # website user home page (by Role)
 # role_home_page = {
@@ -79,7 +80,7 @@ jinja = {
 # ------------
 
 # before_install = "ksa_compliance.install.before_install"
-# after_install = "ksa_compliance.install.after_install"
+after_install = 'ksa_compliance.setup.after_install'
 
 # Uninstallation
 # ------------
@@ -152,9 +153,6 @@ doc_events = {
         'validate': 'ksa_compliance.standard_doctypes.sales_invoice.validate_sales_invoice',
         'before_cancel': 'ksa_compliance.standard_doctypes.sales_invoice.prevent_cancellation_of_sales_invoice',
     },
-    'Branch': {
-        'validate': 'ksa_compliance.standard_doctypes.branch.validate_branch',
-    },
     'Sales Invoice Additional Fields': {
         'after_insert': 'ksa_compliance.utils.update_zatca_status_in_sales_invoice',
         'on_update': 'ksa_compliance.utils.update_zatca_status_in_sales_invoice',
@@ -164,6 +162,14 @@ doc_events = {
         'after_insert': 'ksa_compliance.airtable_logger.log_zatca_integration_update',
         'on_update': 'ksa_compliance.airtable_logger.log_zatca_integration_update',
         'on_trash': 'ksa_compliance.airtable_logger.log_zatca_integration_delete',
+    },
+    'Payment Entry': {
+        'validate': 'ksa_compliance.standard_doctypes.payment_entry.payment_entry.validate_payment_entry',
+        'on_submit': 'ksa_compliance.standard_doctypes.payment_entry.payment_entry.create_prepayment_invoice_additional_fields_doctype',
+        'before_cancel': 'ksa_compliance.standard_doctypes.payment_entry.payment_entry.prevent_cancellation_of_prepayment_invoice',
+    },
+    'Branch': {
+        'validate': 'ksa_compliance.standard_doctypes.branch.validate_branch',
     },
 }
 
@@ -218,6 +224,7 @@ scheduler_events = {'hourly_long': ['ksa_compliance.background_jobs.sync_e_invoi
 
 # Request Events
 # ----------------
+# before_request = ["ksa_compliance.utils.before_request"]
 # after_request = ["ksa_compliance.utils.after_request"]
 
 # Job Events

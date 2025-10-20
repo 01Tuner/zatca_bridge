@@ -1,37 +1,67 @@
-frappe.ui.form.on("Sales Invoice", {
-  setup: function (frm) {
-    frm.set_query(
-      "custom_return_against_additional_references",
-      function (doc) {
-        // Similar to logic in erpnext/public/js/controllers/transaction.js for return_against
-        let filters = {
-          docstatus: 1,
-          is_return: 0,
-          company: doc.company,
-        };
-        if (frm.fields_dict["customer"] && doc.customer)
-          filters["customer"] = doc.customer;
-        if (frm.fields_dict["supplier"] && doc.supplier)
-          filters["supplier"] = doc.supplier;
+frappe.ui.form.on('Sales Invoice', {
+    setup: function (frm) {
+        frm.set_query('custom_return_against_additional_references', function (doc) {
+            // Similar to logic in erpnext/public/js/controllers/transaction.js for return_against
+            let filters = {
+                'docstatus': 1,
+                'is_return': 0,
+                'company': doc.company
+            };
+            if (frm.fields_dict['customer'] && doc.customer) filters['customer'] = doc.customer;
+            if (frm.fields_dict['supplier'] && doc.supplier) filters['supplier'] = doc.supplier;
 
-        return {
-          filters: filters,
-        };
-      }
-    );
-  },
+            return {
+                filters: filters
+            };
+        });
+    },
+    async refresh(frm) {
+        await set_zatca_integration_status(frm)
+        await set_zatca_discount_reason(frm)
 
-  refresh: function (frm) {
-    // Log the current document to the console for debugging
-    console.log("ZATCA Status:", frm.doc.custom_zatca_status);
+      // Log the current document to the console for debugging
+      console.log("ZATCA Status:", frm.doc.custom_zatca_status);
+  
+      // Always try to add the E-invoice tab (will show a message if no data)
+      add_einvoice_form_tab(frm);
+  
+      // Update page title indicator with ZATCA status alongside document status
+      setTimeout(() => update_zatca_indicator(frm), 0);
+    },
+})
 
-    // Always try to add the E-invoice tab (will show a message if no data)
-    add_einvoice_form_tab(frm);
+async function set_zatca_discount_reason(frm) {
+    const zatca_discount_reasons = await get_zatca_discount_reason_codes()
+    frm.fields_dict.custom_zatca_discount_reason.set_data(zatca_discount_reasons)
+}
 
-    // Update page title indicator with ZATCA status alongside document status
-    setTimeout(() => update_zatca_indicator(frm), 0);
-  },
-});
+async function set_zatca_integration_status(frm) {
+    const res = await frappe.call({
+        method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.get_zatca_integration_status",
+        args: {
+            invoice_id: frm.doc.name,
+            doctype: frm.doc.doctype
+        },
+    });
+
+    const status = res.integration_status;
+    if (status) {
+        let color = "blue"
+        if (status === 'Accepted') {
+            color = "green"
+        } else if (["Rejected", "Resend"].includes(status)) {
+            color = "red"
+        }
+        frm.set_intro(`<b>Zatca Status: ${status}</b>`, color)
+    }
+}
+
+async function get_zatca_discount_reason_codes() {
+    const res = await frappe.call({
+        method: "ksa_compliance.invoice.get_zatca_invoice_discount_reason_list"
+    })
+    return res.message
+}
 
 function update_zatca_indicator(frm) {
   // Only proceed if the document exists and isn't new
