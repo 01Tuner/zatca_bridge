@@ -10,7 +10,8 @@
  "custom_blocks": [
   {
    "custom_block_name": "ZATCA Workspace - Feedback and Link Section",
-   "label": "ZATCA Workspace - Feedback and Link Section"
+   "label": "ZATCA Workspace - Feedback and Link Section",
+   "hidden":1
   }
  ],
  "docstatus": 0,
