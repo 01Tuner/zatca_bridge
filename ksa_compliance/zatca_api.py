@@ -185,7 +185,7 @@ def clear_invoice(
     b64_xml = base64.b64encode(invoice_xml.encode()).decode()
     body = {'invoiceHash': invoice_hash, 'uuid': invoice_uuid, 'invoice': b64_xml}
     headers = {
-        'Clearance-Status': '0',
+        'Clearance-Status': '1',
         'Accept-Version': 'V2',
     }
 

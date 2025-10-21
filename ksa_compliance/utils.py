@@ -1,5 +1,6 @@
 import frappe
 from frappe.model.document import Document
+from ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields import ZatcaSendMode
 
 
 def update_zatca_status_in_sales_invoice(doc: Document, method=None):
@@ -17,6 +18,10 @@ def update_zatca_status_in_sales_invoice(doc: Document, method=None):
     if hasattr(doc, 'is_latest') and not doc.is_latest:
         return
     
+    # Skip commit during compliance checks to avoid interfering with savepoints
+    if getattr(doc, 'send_mode', None) == ZatcaSendMode.Compliance:
+        return
+
     # Get the integration status
     integration_status = getattr(doc, 'integration_status', '')
     
@@ -35,5 +40,3 @@ def update_zatca_status_in_sales_invoice(doc: Document, method=None):
             message=f"Failed to update ZATCA status for {doc.invoice_doctype} {doc.sales_invoice}: {str(e)}",
             title="ZATCA Status Update Error"
         )
-
-

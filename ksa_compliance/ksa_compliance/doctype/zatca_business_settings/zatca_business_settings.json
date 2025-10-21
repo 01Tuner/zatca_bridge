@@ -422,7 +422,7 @@
    "fieldname": "vat_account_configuration_tab",
    "fieldtype": "Tab Break",
    "label": "VAT Account Configuration",
-   "hidden": 1
+   "hidden": 0
   },
   {
    "fieldname": "column_break_sdxq",
