@@ -10,10 +10,12 @@ app_license = 'Copyright (c) 2023 LavaLoon'
 # ------------------
 
 # include js, css files in header of desk.html
+# These will be bundled under /assets after bench build
 # app_include_css = "/assets/ksa_compliance/css/ksa_compliance.css"
-# app_include_js = [
-#     '/assets/ksa_compliance/js/feedback_dialog.js',
-# ]
+app_include_js = [
+    # Local copy of QZ Tray library; replace with official file contents
+    "assets/ksa_compliance/js/vendor/qz-tray.js",
+]
 # include js, css files in header of web template
 # web_include_css = "/assets/ksa_compliance/css/ksa_compliance.css"
 # web_include_js = "/assets/ksa_compliance/js/ksa_compliance.js"
@@ -26,7 +28,9 @@ app_license = 'Copyright (c) 2023 LavaLoon'
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {
+    "point-of-sale": "public/js/pos_escpos_print.js",
+}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -73,6 +77,10 @@ jinja = {
         'ksa_compliance.jinja.get_zatca_phase_1_qr_for_invoice',
         'frappe.utils.data.rounded',
         'ksa_compliance.jinja.get_phase_2_print_format_details',
+        'ksa_compliance.jinja.encode_arabic_cp864',
+            'ksa_compliance.jinja.encode_arabic',
+            'ksa_compliance.jinja.esc_init',
+            'ksa_compliance.jinja.esc_select_codepage',
     ],
 }
 

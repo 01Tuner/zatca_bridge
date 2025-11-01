@@ -483,6 +483,85 @@ def get_seller_other_id(sales_invoice: SalesInvoice | POSInvoice, settings: ZATC
     return seller_other_id, seller_other_id_name or 'Commercial Registration Number'
 
 
+def encode_arabic_cp864(text: str) -> str:
+    """
+    Encode Arabic Unicode text to CP1256 (Windows Arabic) for Shreyans POS printers.
+    """
+    if not text:
+        return ""
+    try:
+        # CP1256 is more compatible with Arabic on thermal printers
+        encoded_bytes = text.encode('cp1256', errors='replace')
+        return encoded_bytes.decode('latin-1')
+    except (UnicodeEncodeError, UnicodeDecodeError) as e:
+        frappe.logger().warning(f"CP1256 encoding failed for text: {text[:50]}..., error: {e}")
+        return text
+
+
+def encode_arabic(text: str, encoding: str = 'cp1256') -> str:
+    """
+    Encode Arabic text to a target single-byte codepage and return a latin-1 string
+    carrying the same raw bytes.
+
+    Notes:
+    - Use with ESC/POS where the transport expects 8-bit bytes.
+    - Pair with esc_select_codepage() to select the same codepage on the printer.
+    - Common values: 'cp1256', 'cp864', 'cp720'. Check your printer manual.
+    """
+    if not text:
+        return ""
+    try:
+        encoded_bytes = text.encode(encoding, errors='replace')
+        return encoded_bytes.decode('latin-1')
+    except Exception as e:
+        frappe.logger().warning(
+            f"Arabic encode failed (encoding={encoding}) for text: {text[:50]}..., error: {e}"
+        )
+        return text
+
+
+def esc_init() -> str:
+    """
+    ESC/POS Initialize printer (ESC @).
+    Returns a latin-1 string carrying RAW bytes.
+    """
+    return b"\x1b\x40".decode('latin-1')
+
+
+def esc_select_codepage(codepage: int | str = 51) -> str:
+    """
+    ESC/POS Select character code table (ESC t n).
+
+    Args:
+        codepage: Either an integer (n) or a string alias:
+                  'cp1256' (often 51), 'cp864' (often 42), 'cp720' (often 23).
+                  Values vary by printer model/firmware; consult the manual.
+
+    Returns:
+        latin-1 string whose bytes are: ESC t n
+    """
+    alias_to_n = {
+        'cp1256': 51,
+        'windows-1256': 51,
+        'cp864': 42,
+        'ibm864': 42,
+        'cp720': 23,
+    }
+    try:
+        if isinstance(codepage, str):
+            n = alias_to_n.get(codepage.lower(), 51)
+        else:
+            n = int(codepage)
+        if n < 0:
+            n = 0
+        if n > 255:
+            n = 255
+        return bytes([0x1B, 0x74, n]).decode('latin-1')
+    except Exception as e:
+        frappe.logger().warning(f"esc_select_codepage failed for {codepage}: {e}")
+        # Default to CP1256 selection attempt
+        return bytes([0x1B, 0x74, alias_to_n['cp1256']]).decode('latin-1')
+
 def get_buyer_other_id(customer: str) -> tuple:
     buyer_other_ids = ['TIN', 'CRN', 'MOM', 'MLS', '700', 'SAG', 'NAT', 'GCC', 'IQA', 'PAS', 'OTH']
     buyer_other_id, buyer_other_id_name = None, None
