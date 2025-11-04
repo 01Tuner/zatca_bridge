@@ -4,7 +4,6 @@ from base64 import b64encode
 from io import BytesIO
 from typing import cast, Optional
 from PIL import Image
-import qrcode
 from io import BytesIO
 from PIL import Image
 
