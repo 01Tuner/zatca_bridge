@@ -27,8 +27,117 @@ frappe.ui.form.on('Sales Invoice', {
 
     // Update page title indicator with ZATCA status alongside document status
     setTimeout(() => update_zatca_indicator(frm), 0);
+
+    // Poll for ZATCA status if submitted but status is missing OR it is just 'Ready For Batch'
+    if (frm.doc.docstatus === 1 && (!frm.doc.custom_zatca_status || frm.doc.custom_zatca_status === "Ready For Batch")) {
+      poll_zatca_status(frm);
+    }
+
+    // Add Fix Rejection button if status is Rejected
+    if (frm.doc.custom_zatca_status === "Rejected") {
+      frm.add_custom_button(__("Fix Rejection"), () => fix_rejection_from_invoice(frm), null, "primary");
+    }
   },
 })
+
+function poll_zatca_status(frm, attempt = 1) {
+  const MAX_ATTEMPTS = 60;
+  const INTERVAL = 2000; // 2 seconds
+
+  if (attempt > MAX_ATTEMPTS) {
+    console.log("Stopped polling for ZATCA status: Max attempts reached.");
+    return;
+  }
+
+  // Check if we already have a FINAL status.
+  // If it is "Ready For Batch", we should continue polling.
+  if (frm.doc.custom_zatca_status && frm.doc.custom_zatca_status !== "Ready For Batch") {
+    return;
+  }
+
+  frappe.call({
+    method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.get_zatca_integration_status",
+    args: {
+      invoice_id: frm.doc.name,
+      doctype: frm.doc.doctype
+    },
+    callback: function (r) {
+      // The python method sets frappe.response['integration_status'], so it comes at the root of r
+      const status = r.integration_status || (r.message && r.message.integration_status);
+      console.log(`[Attempt ${attempt}] Polling ZATCA Status:`, status, r);
+
+      if (status) {
+        // Always update the UI with the latest status we found
+        frm.doc.custom_zatca_status = status;
+        update_zatca_indicator(frm);
+        add_einvoice_form_tab(frm); // Refresh tab if exists
+
+        // If it is a final status (NOT Ready For Batch), we show alerts and buttons, then stop polling.
+        if (status !== "Ready For Batch") {
+          if (status === "Rejected") {
+            frm.add_custom_button(__("Fix Rejection"), () => fix_rejection_from_invoice(frm), null, "primary");
+          }
+
+          let indicator_color = 'blue';
+          if (status === 'Accepted') indicator_color = 'green';
+          else if (status === 'Rejected') indicator_color = 'red';
+          else if (status === 'Accepted with warnings') indicator_color = 'orange';
+
+          frappe.show_alert({
+            message: __("ZATCA Status Updated: {0}", [status]),
+            indicator: indicator_color
+          });
+          return; // Stop polling
+        }
+      }
+
+      // If we are here, it means:
+      // 1. No status yet.
+      // 2. Status is "Ready For Batch" (UI updated above, but we keep polling).
+      setTimeout(() => poll_zatca_status(frm, attempt + 1), INTERVAL);
+    }
+  });
+}
+
+async function fix_rejection_from_invoice(frm) {
+  // Fetch the latest Sales Invoice Additional Fields doc name
+  let siaf_id = await frappe.db.get_value("Sales Invoice Additional Fields", {
+    sales_invoice: frm.doc.name,
+    invoice_doctype: frm.doc.doctype,
+    is_latest: 1
+  }, "name");
+
+  // Handle the response structure from frappe.db.get_value which returns {message: {name: "..."}}
+  if (siaf_id && siaf_id.message) {
+    siaf_id = siaf_id.message.name;
+  }
+
+
+  if (!siaf_id) {
+    frappe.msgprint(__("Could not find the latest ZATCA document to fix."));
+    return;
+  }
+
+  let message = __("<p>This will create a new Sales Invoice Additional Fields document for the invoice '{0}' and " +
+    "submit it to ZATCA. <strong>Make sure you have updated any bad configuration that lead to the initial rejection</strong>.</p>" +
+    "<p>Do you want to proceed?</p>", [frm.doc.name]);
+
+  frappe.confirm(message, async () => {
+    try {
+      await frappe.call({
+        freeze: true,
+        freeze_message: __('Please wait...'),
+        method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.fix_rejection",
+        args: {
+          id: siaf_id,
+        },
+      });
+      frm.reload_doc();
+    } catch (e) {
+      console.error(e);
+    }
+  });
+}
 
 async function set_zatca_discount_reason(frm) {
   const zatca_discount_reasons = await get_zatca_discount_reason_codes()
@@ -198,7 +307,7 @@ function add_einvoice_form_tab(frm) {
       $li.find("a.nav-link").on("shown.bs.tab", function () {
         if (!einvoice) return; // nothing to load
         if (!$pane.data("loaded")) {
-          load_einvoice_in_form_tab_by_id(container_id, einvoice.name);
+          load_einvoice_in_form_tab_by_id(frm, container_id, einvoice.name);
           $pane.data("loaded", true);
         }
       });
@@ -206,7 +315,7 @@ function add_einvoice_form_tab(frm) {
   });
 }
 
-function load_einvoice_in_form_tab_by_id(container_id, doc_name) {
+function load_einvoice_in_form_tab_by_id(parent_frm, container_id, doc_name) {
   const container = document.getElementById(container_id);
   if (!container) return;
 
@@ -252,6 +361,9 @@ function load_einvoice_in_form_tab_by_id(container_id, doc_name) {
             .css({ position: "relative", top: "auto" });
           $(container).find(".loading-indicator").remove();
           form_wrapper.show();
+
+          // Reset the breadcrumbs back to the parent form's module
+          frappe.breadcrumbs.add(parent_frm.meta.module, parent_frm.doctype);
         }, 800);
       });
     }
