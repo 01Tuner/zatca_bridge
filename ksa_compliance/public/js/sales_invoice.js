@@ -1,77 +1,77 @@
 frappe.ui.form.on('Sales Invoice', {
-    setup: function (frm) {
-        frm.set_query('custom_return_against_additional_references', function (doc) {
-            // Similar to logic in erpnext/public/js/controllers/transaction.js for return_against
-            let filters = {
-                'docstatus': 1,
-                'is_return': 0,
-                'company': doc.company
-            };
-            if (frm.fields_dict['customer'] && doc.customer) filters['customer'] = doc.customer;
-            if (frm.fields_dict['supplier'] && doc.supplier) filters['supplier'] = doc.supplier;
+  setup: function (frm) {
+    frm.set_query('custom_return_against_additional_references', function (doc) {
+      // Similar to logic in erpnext/public/js/controllers/transaction.js for return_against
+      let filters = {
+        'docstatus': 1,
+        'is_return': 0,
+        'company': doc.company
+      };
+      if (frm.fields_dict['customer'] && doc.customer) filters['customer'] = doc.customer;
+      if (frm.fields_dict['supplier'] && doc.supplier) filters['supplier'] = doc.supplier;
 
-            return {
-                filters: filters
-            };
-        });
-    },
-    async refresh(frm) {
-        // await set_zatca_integration_status(frm)
-        await set_zatca_discount_reason(frm)
+      return {
+        filters: filters
+      };
+    });
+  },
+  refresh: async function (frm) {
+    // await set_zatca_integration_status(frm)
+    await set_zatca_discount_reason(frm)
 
-      // Log the current document to the console for debugging
-      console.log("ZATCA Status:", frm.doc.custom_zatca_status);
-  
-      // Always try to add the E-invoice tab (will show a message if no data)
-      add_einvoice_form_tab(frm);
-  
-      // Update page title indicator with ZATCA status alongside document status
-      setTimeout(() => update_zatca_indicator(frm), 0);
-    },
+    // Log the current document to the console for debugging
+    console.log("ZATCA Status:", frm.doc.custom_zatca_status);
+
+    // Always try to add the E-invoice tab (will show a message if no data)
+    add_einvoice_form_tab(frm);
+
+    // Update page title indicator with ZATCA status alongside document status
+    setTimeout(() => update_zatca_indicator(frm), 0);
+  },
 })
 
 async function set_zatca_discount_reason(frm) {
-    const zatca_discount_reasons = await get_zatca_discount_reason_codes()
-    frm.fields_dict.custom_zatca_discount_reason.set_data(zatca_discount_reasons)
+  const zatca_discount_reasons = await get_zatca_discount_reason_codes()
+  frm.fields_dict.custom_zatca_discount_reason.set_data(zatca_discount_reasons)
 }
 
 async function set_zatca_integration_status(frm) {
-    const res = await frappe.call({
-        method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.get_zatca_integration_status",
-        args: {
-            invoice_id: frm.doc.name,
-            doctype: frm.doc.doctype
-        },
-    });
+  const res = await frappe.call({
+    method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.get_zatca_integration_status",
+    args: {
+      invoice_id: frm.doc.name,
+      doctype: frm.doc.doctype
+    },
+  });
 
-    const status = res.integration_status;
-    if (status) {
-        let color = "blue"
-        if (status === 'Accepted') {
-            color = "green"
-        } else if (["Rejected", "Resend"].includes(status)) {
-            color = "red"
-        }
-        frm.set_intro(`<b>Zatca Status: ${status}</b>`, color)
+  const status = res.integration_status;
+  if (status) {
+    let color = "blue"
+    if (status === 'Accepted') {
+      color = "green"
+    } else if (["Rejected", "Resend"].includes(status)) {
+      color = "red"
     }
+    frm.set_intro(`<b>Zatca Status: ${status}</b>`, color)
+  }
 }
 
 async function get_zatca_discount_reason_codes() {
-    const res = await frappe.call({
-        method: "ksa_compliance.invoice.get_zatca_invoice_discount_reason_list"
-    })
-    return res.message
+  const res = await frappe.call({
+    method: "ksa_compliance.invoice.get_zatca_invoice_discount_reason_list"
+  })
+  return res.message
 }
 
 function update_zatca_indicator(frm) {
-  // Only proceed if the document exists and isn't new
-  if (!frm || !frm.doc || frm.is_new()) return;
-
   // Remove any previously injected ZATCA pill
   try {
     const $head = $(frm.page.wrapper).find(".page-head");
     $head.find('[data-zatca-indicator="1"]').remove();
-  } catch (e) {}
+  } catch (e) { }
+
+  // Only proceed if the document exists and isn't new
+  if (!frm || !frm.doc || frm.is_new()) return;
 
   const status = frm.doc.custom_zatca_status;
   if (!status) return;
@@ -140,7 +140,7 @@ function add_einvoice_form_tab(frm) {
   // Clean any existing instance (handles multiple refreshes)
   remove_einvoice_tab(frm);
 
-  if(!frm.doc.custom_zatca_status) return;
+  if (!frm.doc.custom_zatca_status) return;
   // Fetch latest E-invoice data (if any) and then build the tab
   frappe.call({
     method: "frappe.client.get_list",
@@ -173,12 +173,10 @@ function add_einvoice_form_tab(frm) {
           <div class="p-3">
             <div id="${container_id}" style="min-height: 500px;">
               <div class="loading-indicator" style="text-align: center; padding: 50px; color: #888;">
-                <i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br><br>
-                ${
-                  einvoice
-                    ? __("Loading E-invoice details...")
-                    : __("No E-invoice data found for this invoice.")
-                }
+                ${einvoice
+          ? `<i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br><br>${__("Loading E-invoice details...")}`
+          : __("No E-invoice data found for this invoice.")
+        }
               </div>
             </div>
           </div>
@@ -239,7 +237,7 @@ function load_einvoice_in_form_tab_by_id(container_id, doc_name) {
           form.disable_form();
           form_wrapper
             .find(
-              ".form-toolbar, .layout-side-section, .page-head, .form-footer, .form-assignments, .form-comments, .form-shared, .form-attachments, .btn-primary, .btn-secondary, .form-print-wrapper"
+              ".layout-side-section, .page-head, .form-footer, .form-assignments, .form-comments, .form-shared, .form-attachments, .btn-primary, .btn-secondary, .form-print-wrapper"
             )
             .hide();
           form_wrapper.find(".form-layout").css({
