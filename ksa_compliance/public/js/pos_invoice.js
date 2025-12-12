@@ -11,7 +11,16 @@ frappe.ui.form.on("POS Invoice", {
         __("View")
       );
     }
-    
+
+    // Poll for ZATCA status if submitted but status is missing OR it is just 'Ready For Batch'
+    if (frm.doc.docstatus === 1 && (!frm.doc.custom_zatca_status || frm.doc.custom_zatca_status === "Ready For Batch")) {
+      poll_zatca_status(frm);
+    }
+
+    // Add Fix Rejection button if status is Rejected
+    if (frm.doc.custom_zatca_status === "Rejected") {
+      frm.add_custom_button(__("Fix Rejection"), () => fix_rejection_from_invoice(frm), null, "primary");
+    }
   },
 });
 
@@ -24,7 +33,7 @@ function update_zatca_indicator(frm) {
   try {
     const $head = $(frm.page.wrapper).find(".page-head");
     $head.find('[data-zatca-indicator="1"]').remove();
-  } catch (e) {}
+  } catch (e) { }
 
   const status = frm.doc.custom_zatca_status;
   if (!status) return;
@@ -84,7 +93,7 @@ function show_einvoice_dialog(frm, doctype) {
     callback: function (r) {
       if (r.message && r.message.length > 0) {
         let einvoice_data = r.message[0];
-        show_einvoice_details_dialog(einvoice_data, frm.doc.name);
+        frappe.set_route("Form", "Sales Invoice Additional Fields", einvoice_data.name);
       } else {
         frappe.msgprint(__("No E-invoice data found for this invoice."));
       }
@@ -92,164 +101,102 @@ function show_einvoice_dialog(frm, doctype) {
   });
 }
 
-function show_einvoice_details_dialog(data, invoice_name) {
-  let dialog = new frappe.ui.Dialog({
-    title: __("E-invoice Details for {0}", [invoice_name]),
-    size: "extra-large",
-    fields: [
-      {
-        fieldtype: "HTML",
-        fieldname: "additional_fields_link",
-        options: `<div style="margin-bottom: 15px;">
-                    <strong>Additional Fields Document: </strong>
-                    <a href="#Form/Sales Invoice Additional Fields/${data.name}" 
-                       onclick="frappe.set_route('Form', 'Sales Invoice Additional Fields', '${data.name}'); return false;"
-                       style="color: #007bff; text-decoration: underline;">
-                        ${data.name}
-                    </a>
-                </div>`,
-      },
-      {
-        fieldtype: "HTML",
-        fieldname: "document_container",
-        options: `<div id="embedded-document-container" style="min-height: 600px;"></div>`,
-      },
-    ],
-    primary_action_label: __("Open in New Tab"),
-    primary_action: function () {
-      frappe.set_route("Form", "Sales Invoice Additional Fields", data.name);
+
+
+function poll_zatca_status(frm, attempt = 1) {
+  const MAX_ATTEMPTS = 60;
+  const INTERVAL = 2000; // 2 seconds
+
+  if (attempt > MAX_ATTEMPTS) {
+    console.log("Stopped polling for ZATCA status: Max attempts reached.");
+    return;
+  }
+
+  // Check if we already have a FINAL status.
+  // If it is "Ready For Batch", we should continue polling.
+  if (frm.doc.custom_zatca_status && frm.doc.custom_zatca_status !== "Ready For Batch") {
+    return;
+  }
+
+  frappe.call({
+    method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.get_zatca_integration_status",
+    args: {
+      invoice_id: frm.doc.name,
+      doctype: frm.doc.doctype
     },
-    secondary_action_label: __("Close"),
-    secondary_action: function () {
-      dialog.hide();
-    },
-  });
+    callback: function (r) {
+      // The python method sets frappe.response['integration_status'], so it comes at the root of r
+      const status = r.integration_status || (r.message && r.message.integration_status);
+      console.log(`[Attempt ${attempt}] Polling ZATCA Status:`, status, r);
 
-  dialog.show();
+      if (status) {
+        // Always update the UI with the latest status we found
+        frm.doc.custom_zatca_status = status;
+        update_zatca_indicator(frm);
 
-  // Load and render the document form in the dialog
-  setTimeout(() => {
-    load_embedded_document(data.name);
-  }, 500);
-}
+        // If it is a final status (NOT Ready For Batch), we show alerts and buttons, then stop polling.
+        if (status !== "Ready For Batch") {
+          if (status === "Rejected") {
+            frm.add_custom_button(__("Fix Rejection"), () => fix_rejection_from_invoice(frm), null, "primary");
+          }
 
-function show_einvoice_details_dialog(data, invoice_name) {
-  let dialog = new frappe.ui.Dialog({
-    title: __("E-invoice Details for {0}", [invoice_name]),
-    size: "extra-large",
-    fields: [
-      // {
-      //     fieldtype: 'HTML',
-      //     fieldname: 'additional_fields_link',
-      //     options: `<div style="margin-bottom: 15px;">
-      //         <strong>Additional Fields Document: </strong>
-      //         <a href="#Form/Sales Invoice Additional Fields/${data.name}"
-      //            onclick="frappe.set_route('Form', 'Sales Invoice Additional Fields', '${data.name}'); return false;"
-      //            style="color: #007bff; text-decoration: underline;">
-      //             ${data.name}
-      //         </a>
-      //     </div>`
-      // },
-      {
-        fieldtype: "HTML",
-        fieldname: "document_container",
-        options: `<div id="embedded-document-container" style="min-height: 700px;">
-                    <div class="loading-indicator" style="text-align: center; padding: 50px; color: #888;">
-                        <i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br><br>
-                        Loading document...
-                    </div>
-                </div>`,
-      },
-    ],
-    primary_action_label: __("Open in New Tab"),
-    primary_action: function () {
-      frappe.set_route("Form", "Sales Invoice Additional Fields", data.name);
-    },
-    secondary_action_label: __("Close"),
-    secondary_action: function () {
-      dialog.hide();
-    },
-  });
+          let indicator_color = 'blue';
+          if (status === 'Accepted') indicator_color = 'green';
+          else if (status === 'Rejected') indicator_color = 'red';
+          else if (status === 'Accepted with warnings') indicator_color = 'orange';
 
-  dialog.show();
-
-  // Load and render the document form in the dialog
-  setTimeout(() => {
-    load_embedded_document_form(data.name);
-  }, 500);
-}
-
-function load_embedded_document_form(doc_name) {
-  // Alternative Method 2: Embed using Frappe's form rendering
-  // This creates the actual form widget within the dialog
-  const container = document.getElementById("embedded-document-container");
-  if (!container) return;
-
-  frappe.model.with_doc(
-    "Sales Invoice Additional Fields",
-    doc_name,
-    function () {
-      const doc = frappe.get_doc("Sales Invoice Additional Fields", doc_name);
-
-      // Clear container
-      // container.innerHTML = '';
-
-      // Create form wrapper
-      const form_wrapper = $(
-        `<div class="embedded-form-wrapper" style="background: white;"></div>`
-      ).appendTo(container);
-      form_wrapper.hide();
-      // Create a simplified form view
-      frappe.model.with_doctype("Sales Invoice Additional Fields", function () {
-        const form = new frappe.ui.form.Form(
-          "Sales Invoice Additional Fields",
-          form_wrapper[0],
-          false
-        );
-
-        // Set the document
-        form.doc = doc;
-        form.docname = doc_name;
-        form.doctype = "Sales Invoice Additional Fields";
-
-        // Refresh the form to display all fields
-        form.refresh();
-
-        // Make form read-only after a short delay to ensure it's fully loaded
-        setTimeout(() => {
-          form.disable_form();
-
-          form_wrapper.find(".form-toolbar").hide();
-          form_wrapper.find(".layout-side-section").hide();
-          form_wrapper.find(".page-head").hide();
-          form_wrapper.find(".form-footer").hide();
-          form_wrapper.find(".form-assignments").hide();
-          form_wrapper.find(".form-comments").hide();
-          form_wrapper.find(".form-shared").hide();
-          form_wrapper.find(".form-attachments").hide();
-
-          // Hide form actions and buttons
-          form_wrapper.find(".btn-primary").hide();
-          form_wrapper.find(".btn-secondary").hide();
-          form_wrapper.find(".form-print-wrapper").hide();
-
-          // Add some styling
-          form_wrapper.find(".form-layout").css({
-            "max-height": "600px",
-            "overflow-y": "auto",
-            // 'border': '1px solid #d1d8dd',
-            // 'border-radius': '4px',
-            // 'padding': '15px'
+          frappe.show_alert({
+            message: __("ZATCA Status Updated: {0}", [status]),
+            indicator: indicator_color
           });
-          form_wrapper.find(".form-layout .form-page").css({
-            "padding-left": "20px",
-            "padding-top": "20px",
-          });
+          return; // Stop polling
+        }
+      }
 
-          $(container).find(".loading-indicator").remove();
-          form_wrapper.show();
-        }, 1000);
-      });
+      // If we are here, it means:
+      // 1. No status yet.
+      // 2. Status is "Ready For Batch" (UI updated above, but we keep polling).
+      setTimeout(() => poll_zatca_status(frm, attempt + 1), INTERVAL);
     }
-  );
+  });
+}
+
+async function fix_rejection_from_invoice(frm) {
+  // Fetch the latest Sales Invoice Additional Fields doc name
+  let siaf_id = await frappe.db.get_value("Sales Invoice Additional Fields", {
+    sales_invoice: frm.doc.name,
+    invoice_doctype: frm.doc.doctype,
+    is_latest: 1
+  }, "name");
+
+  // Handle the response structure from frappe.db.get_value which returns {message: {name: "..."}}
+  if (siaf_id && siaf_id.message) {
+    siaf_id = siaf_id.message.name;
+  }
+
+
+  if (!siaf_id) {
+    frappe.msgprint(__("Could not find the latest ZATCA document to fix."));
+    return;
+  }
+
+  let message = __("<p>This will create a new Sales Invoice Additional Fields document for the invoice '{0}' and " +
+    "submit it to ZATCA. <strong>Make sure you have updated any bad configuration that lead to the initial rejection</strong>.</p>" +
+    "<p>Do you want to proceed?</p>", [frm.doc.name]);
+
+  frappe.confirm(message, async () => {
+    try {
+      await frappe.call({
+        freeze: true,
+        freeze_message: __('Please wait...'),
+        method: "ksa_compliance.ksa_compliance.doctype.sales_invoice_additional_fields.sales_invoice_additional_fields.fix_rejection",
+        args: {
+          id: siaf_id,
+        },
+      });
+      frm.reload_doc();
+    } catch (e) {
+      console.error(e);
+    }
+  });
 }
