@@ -438,7 +438,12 @@ class Einvoice:
         tax_amount = abs(self.sales_invoice_doc.taxes[0].tax_amount)
         if applied_discount_percent == 0:
             applied_discount_percent = (discount_amount / (total_without_vat + tax_amount)) * 100
-        applied_discount_amount = total_without_vat * (applied_discount_percent / 100)
+        if self.result['invoice']['allowance_charge']:
+            applied_discount_amount = sum(
+                 flt(charge['amount'], 2) for charge in self.result['invoice']['allowance_charge']
+            )
+        else:
+             applied_discount_amount = total_without_vat * (applied_discount_percent / 100)
         self.result['invoice']['allowance_total_amount'] = applied_discount_amount
         self.additional_fields_doc.fatoora_invoice_discount_amount = applied_discount_amount
 
@@ -917,11 +922,6 @@ class Einvoice:
         self.result['invoice']['line_extension_amount'] = sum(it['amount'] for it in item_lines)
         self.compute_invoice_discount_amount()
 
-        # ZATCA Rule BR-CO-11: Sum of allowances on document level = Sum of Document level allowance amount
-        if self.result['invoice']['allowance_charge']:
-            self.result['invoice']['allowance_total_amount'] = sum(
-                flt(charge['amount'], 2) for charge in self.result['invoice']['allowance_charge']
-            )
 
         self.result['invoice']['net_total'] = (
             self.result['invoice']['line_extension_amount'] - self.result['invoice']['allowance_total_amount']
