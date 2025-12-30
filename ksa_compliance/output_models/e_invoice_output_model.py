@@ -916,6 +916,13 @@ class Einvoice:
         self.result['invoice']['item_lines'] = item_lines
         self.result['invoice']['line_extension_amount'] = sum(it['amount'] for it in item_lines)
         self.compute_invoice_discount_amount()
+
+        # ZATCA Rule BR-CO-11: Sum of allowances on document level = Sum of Document level allowance amount
+        if self.result['invoice']['allowance_charge']:
+            self.result['invoice']['allowance_total_amount'] = sum(
+                flt(charge['amount'], 2) for charge in self.result['invoice']['allowance_charge']
+            )
+
         self.result['invoice']['net_total'] = (
             self.result['invoice']['line_extension_amount'] - self.result['invoice']['allowance_total_amount']
         )
