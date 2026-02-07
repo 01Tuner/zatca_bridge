@@ -264,8 +264,14 @@ scheduler_events = {'hourly_long': ['ksa_compliance.background_jobs.sync_e_invoi
 # "ksa_compliance.auth.validate"
 # ]
 
-# fixtures = [
-# ]
+fixtures = [
+    {
+        "dt": "Address Template",
+        "filters": [
+            ["country", "in", ["Saudi Arabia"]]
+        ]
+    }
+]
 
 # Auto generate type annotations for doctypes
 # Reference: https://github.com/frappe/frappe/pull/21776

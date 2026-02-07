@@ -1,0 +1,11 @@
+[
+ {
+  "country": "Saudi Arabia",
+  "docstatus": 0,
+  "doctype": "Address Template",
+  "is_default": 1,
+  "modified": "2026-02-07 10:23:12.494351",
+  "name": "Saudi Arabia",
+  "template": "{% if custom_building_number %} Building No:{{ custom_building_number }}, {% endif -%} {{ address_line1 }}, \n{% if address_line2 %}{{ address_line2 }}, {% endif -%}\n{% if custom_area %} {{ custom_area }}, {% endif -%}\n{{ city }}, \n{% if state %}{{ state }}, {% endif -%}\n{% if pincode %} PO Box:{{ pincode }}, {% endif -%}\n{{ country }}\n{% if phone %}<br>{{ _(\"Phone\") }}: {{ phone }}<br>{% endif -%}\n{% if fax %}{{ _(\"Fax\") }}: {{ fax }}<br>{% endif -%}\n{% if email_id %}{{ _(\"Email\") }}: {{ email_id }}<br>{% endif -%}"
+ }
+]
