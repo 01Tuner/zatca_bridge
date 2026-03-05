@@ -18,7 +18,7 @@
             "docstatus": 0,
             "dt": "Sales Invoice Item",
             "fetch_from": "item_code.item_name_arabic",
-            "fetch_if_empty": 0s,
+            "fetch_if_empty": 0,
             "fieldname": "item_name_arabic",
             "fieldtype": "Data",
             "hidden": 0,
