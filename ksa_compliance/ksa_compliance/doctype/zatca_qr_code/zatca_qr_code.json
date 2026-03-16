@@ -10,10 +10,9 @@
     "fields": [
         {
             "fieldname": "sales_invoice",
-            "fieldtype": "Link",
+            "fieldtype": "Data",
             "in_list_view": 1,
-            "label": "Sales Invoice",
-            "options": "Sales Invoice",
+            "label": "Invoice",
             "reqd": 1,
             "unique": 1
         },

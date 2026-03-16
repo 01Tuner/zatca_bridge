@@ -46,8 +46,19 @@ def update_zatca_status_in_sales_invoice(doc: Document, method=None):
     
     # Update the Sales Invoice with the ZATCA status and QR
     try:
+        invoice_type_code = str(doc.invoice_type_code)
+        is_standard = doc.invoice_type_transaction == '0100000'
+
+        if invoice_type_code == '381':
+            print_heading = "Credit Note" if is_standard else "Simplified Credit Note"
+        elif invoice_type_code == '383':
+            print_heading = "Debit Note" if is_standard else "Simplified Debit Note"
+        else:
+            print_heading = "Tax Invoice" if is_standard else "Simplified Tax Invoice"
+
         update_dict = {
-            'custom_zatca_status': integration_status
+            'custom_zatca_status': integration_status,
+            'select_print_heading': print_heading
         }
         if hasattr(doc, 'qr_image_src') and doc.qr_image_src:
             qr_src = doc.qr_image_src
@@ -82,3 +93,10 @@ def update_zatca_status_in_sales_invoice(doc: Document, method=None):
             message=f"Failed to update ZATCA status for {doc.invoice_doctype} {doc.sales_invoice}: {str(e)}",
             title="ZATCA Status Update Error"
         )
+
+
+def import_print_designer_templates():
+    from print_designer.default_formats import install_default_formats
+    install_default_formats("ksa_compliance")
+
+
