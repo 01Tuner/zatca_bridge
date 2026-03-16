@@ -38,7 +38,23 @@ def clear_additional_fields_ignore_list() -> None:
 
 
 def create_sales_invoice_additional_fields_doctype(self: SalesInvoice | POSInvoice, method):
-    if self.doctype == 'Sales Invoice' and not _should_enable_zatca_for_invoice(self.name):
+    # Phase 1: Attempt to generate and save the QR code to the custom image field upon submit
+    # Note: If Phase 2 is enabled, we skip this to prioritize Phase 2's official QR response
+    if self.doctype in ['Sales Invoice', 'POS Invoice']:
+        try:
+            is_phase2_enabled = ZATCABusinessSettings.is_enabled_for_company(self.company)
+            if not is_phase2_enabled and ZATCAPhase1BusinessSettings.is_enabled_for_company(self.company):
+                # Enqueue after commit so the invoice record exists when save_file runs
+                frappe.utils.background_jobs.enqueue(
+                    _save_phase1_qr_to_invoice,
+                    invoice_name=self.name,
+                    doctype=self.doctype,
+                    enqueue_after_commit=True,
+                )
+        except Exception as e:
+            frappe.log_error(title="ZATCA Phase 1 QR Field Logic Error", message=str(e))
+
+    if self.doctype in ['Sales Invoice', 'POS Invoice'] and not _should_enable_zatca_for_invoice(self.name, self.doctype):
         logger.info(f"Skipping additional fields for {self.name} because it's before start date")
         return
 
@@ -93,7 +109,73 @@ def _submit_additional_fields(doc: SalesInvoiceAdditionalFields):
     logger.info(f'Submission result: {message}')
 
 
-def _should_enable_zatca_for_invoice(invoice_id: str) -> bool:
+def _save_phase1_qr_to_invoice(invoice_name: str, doctype: str = 'Sales Invoice') -> None:
+    """Save the ZATCA Phase 1 QR code image as a file attached to the Sales Invoice.
+    
+    This runs via enqueue_after_commit so the invoice is fully committed before we call save_file.
+    """
+    try:
+        from ksa_compliance.jinja import get_zatca_phase_1_qr_for_invoice
+        import base64
+        from frappe.utils.file_manager import save_file
+
+        b64 = get_zatca_phase_1_qr_for_invoice(invoice_name)
+        if not b64:
+            return
+        
+        # Delete old QR file for this invoice if it already exists
+        existing = frappe.db.get_value(doctype, invoice_name, 'custom_zatca_qr_code')
+        if existing and existing.startswith('/files/'):
+            try:
+                old_file = frappe.db.get_value('File', {'file_url': existing, 'attached_to_name': invoice_name, 'attached_to_doctype': doctype})
+                if old_file:
+                    frappe.delete_doc('File', old_file, ignore_permissions=True)
+            except Exception:
+                pass
+
+        file_doc = save_file(
+            fname=f"ZATCA_Phase1_QR_{invoice_name.replace('/', '-')}.png",
+            content=base64.b64decode(b64),
+            dt=None,
+            dn=None,
+            is_private=0
+        )
+        from ksa_compliance.utils import assign_qr_code_to_invoice
+        
+        tax_id = frappe.db.get_value(doctype, invoice_name, 'custom_customer_vat_no')
+        doc_details = frappe.db.get_value(doctype, invoice_name, ['is_return', 'is_debit_note'], as_dict=True)
+        if doc_details:
+            is_return = doc_details.get('is_return')
+            is_debit_note = doc_details.get('is_debit_note')
+        else:
+            is_return = 0
+            is_debit_note = 0
+
+        if is_return:
+            print_heading = "Credit Note" if tax_id else "Simplified Credit Note"
+        elif is_debit_note:
+            print_heading = "Debit Note" if tax_id else "Simplified Debit Note"
+        else:
+            print_heading = "Tax Invoice" if tax_id else "Simplified Tax Invoice"
+        
+        frappe.db.set_value(
+            doctype, invoice_name,
+            {
+                'custom_zatca_qr_code': assign_qr_code_to_invoice(invoice_name, file_doc.file_url),
+                'select_print_heading': print_heading
+            },
+            update_modified=False
+        )
+        frappe.db.commit()
+        logger.info(f'Phase 1 QR saved for {invoice_name}: {file_doc.file_url}')
+    except Exception as e:
+        frappe.log_error(
+            title='ZATCA Phase 1 QR Save Error',
+            message=f'Failed to save Phase 1 QR for {invoice_name}: {str(e)}'
+        )
+
+
+def _should_enable_zatca_for_invoice(invoice_id: str, doctype: str = 'Sales Invoice') -> bool:
     start_date = date(2024, 3, 1)
 
     if frappe.db.table_exists('Vehicle Booking Item Info'):
@@ -108,7 +190,7 @@ def _should_enable_zatca_for_invoice(invoice_id: str) -> bool:
             local_date = records[0]['local_trx_date_time'].date()
             return local_date >= start_date
 
-    posting_date = frappe.db.get_value('Sales Invoice', invoice_id, 'posting_date')
+    posting_date = frappe.db.get_value(doctype, invoice_id, 'posting_date')
     return posting_date >= start_date
 
 

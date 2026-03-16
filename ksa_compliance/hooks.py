@@ -276,3 +276,6 @@ fixtures = [
 # Auto generate type annotations for doctypes
 # Reference: https://github.com/frappe/frappe/pull/21776
 export_python_type_annotations = True
+
+# Print Designer formats
+pd_standard_format_folder = "print_designer_templates"
