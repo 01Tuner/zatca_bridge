@@ -278,4 +278,4 @@ fixtures = [
 export_python_type_annotations = True
 
 # Print Designer formats
-pd_standard_format_folder = "print_designer_templates/ksa_compliance"
+pd_standard_format_folder = "print_designer_templates"
