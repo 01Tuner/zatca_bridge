@@ -96,7 +96,10 @@ def update_zatca_status_in_sales_invoice(doc: Document, method=None):
 
 
 def import_print_designer_templates():
-    from print_designer.default_formats import install_default_formats
-    install_default_formats("ksa_compliance")
+    try:
+        from print_designer.default_formats import install_default_formats
+        install_default_formats("ksa_compliance")
+    except ImportError:
+        pass
 
 
