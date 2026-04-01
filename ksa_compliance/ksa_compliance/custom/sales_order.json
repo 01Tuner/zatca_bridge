@@ -1,0 +1,33 @@
+{
+    "custom_fields": [],
+    "custom_perms": [],
+    "doctype": "Sales Order",
+    "links": [],
+    "property_setters": [
+        {
+            "doctype_or_field": "DocField",
+            "doc_type": "Sales Order",
+            "field_name": "tax_id",
+            "property": "label",
+            "property_type": "Data",
+            "value": "Customer VAT No"
+        },
+        {
+            "doctype_or_field": "DocField",
+            "doc_type": "Sales Order",
+            "field_name": "tax_id",
+            "property": "fetch_from",
+            "property_type": "Small Text",
+            "value": "customer.custom_vat_registration_number"
+        },
+        {
+            "doctype_or_field": "DocField",
+            "doc_type": "Sales Order",
+            "field_name": "",
+            "property": "fetch_if_empty",
+            "property_type": "Check",
+            "value": "0"
+        }
+    ],
+    "sync_on_migrate": 1
+}

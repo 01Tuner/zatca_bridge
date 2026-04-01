@@ -1,0 +1,17 @@
+{
+    "custom_fields": [],
+    "custom_perms": [],
+    "doctype": "Purchase Invoice",
+    "links": [],
+    "property_setters": [
+        {
+            "doctype_or_field": "DocField",
+            "doc_type": "Purchase Invoice",
+            "field_name": "tax_id",
+            "property": "label",
+            "property_type": "Data",
+            "value": "Supplier VAT No"
+        }
+    ],
+    "sync_on_migrate": 1
+}

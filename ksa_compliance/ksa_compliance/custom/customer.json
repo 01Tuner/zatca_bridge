@@ -248,6 +248,23 @@
   "custom_perms": [],
   "doctype": "Customer",
   "links": [],
-  "property_setters": [],
+  "property_setters": [
+    {
+      "doctype_or_field": "DocField",
+      "doc_type": "Customer",
+      "field_name": "tax_id",
+      "property": "hidden",
+      "property_type": "Check",
+      "value": "1"
+    },
+    {
+      "doctype_or_field": "DocType",
+      "doc_type": "Customer",
+      "field_name": null,
+      "property": "search_fields",
+      "property_type": "Data",
+      "value": "customer_group,territory, mobile_no,primary_address,custom_vat_registration_number"
+    }
+  ],
   "sync_on_migrate": 1
 }

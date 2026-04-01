@@ -255,6 +255,14 @@ Simplified Tax Invoice Credit Note,إشعار دائن للفاتورة الضر
 Simplified Tax Invoice Debit Note,إشعار مدين للفاتورة الضريبية المبسطة
 Standard Tax Invoice,فاتورة ضريبية
 Simplified Tax Invoice,فاتورة ضريبية مبسطة
+Tax Invoice,فاتورة ضريبية
+Credit Note,إشعار دائن
+Simplified Credit Note,إشعار دائن مبسط
+Debit Note,إشعار مدين
+Simplified Debit Note,إشعار مدين مبسط
+Subtotal,الإجمالي الفرعي
+Total,الإجمالي
+Purchase Order,طلب شرا
 Posting Date,تاريخ إصدار الفاتورة
 Seller Name,اسم البائع
 Address,عنوان المنشأة
