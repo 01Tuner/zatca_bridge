@@ -758,6 +758,42 @@ class Einvoice:
                 item_data['allowance_charge_reason_code'] = zatca_discount_reason.code
             item_lines.append(frappe._dict(item_data))
 
+        # Add charges from taxes table as item lines
+        if getattr(doc, 'taxes', None):
+            max_idx = max((it.get('idx', 0) for it in item_lines), default=0) if item_lines else 0
+            vat_rate = 15.0
+            for tax in doc.taxes:
+                if tax.rate > 0 or (tax.account_head and "VAT" in tax.account_head):
+                    vat_rate = tax.rate if tax.rate > 0 else 15.0
+                    break
+
+            for tax in doc.taxes:
+                if (not tax.rate or tax.rate == 0) and abs(tax.tax_amount) > 0:
+                    max_idx += 1
+                    amount = abs(tax.tax_amount)
+                    tax_amount = amount * (vat_rate / 100.0)
+                    
+                    item_data = {
+                        'idx': max_idx,
+                        'qty': 1.0,
+                        'uom': 'EA',
+                        'item_code': 'Charge',
+                        'item_name': tax.description or tax.account_head or 'Charge',
+                        'net_amount': amount,
+                        'rate': amount,
+                        'discount_percentage': 0.0,
+                        'tax_percent': vat_rate,
+                        'amount': amount,
+                        'rounding_amount': amount + tax_amount,
+                        'base_amount': amount,
+                        'discount_amount': 0.0,
+                        'tax_amount': tax_amount,
+                        'item_tax_template': doc.items[0].item_tax_template if doc.items else None,
+                        'allowance_charge_reason': None,
+                        'allowance_charge_reason_code': None,
+                    }
+                    item_lines.append(frappe._dict(item_data))
+
     def get_e_invoice_details(self, invoice_type: str):
         is_standard = invoice_type == 'Standard'
 
@@ -922,7 +958,6 @@ class Einvoice:
         self.result['invoice']['line_extension_amount'] = sum(it['amount'] for it in item_lines)
         self.compute_invoice_discount_amount()
 
-
         self.result['invoice']['net_total'] = (
             self.result['invoice']['line_extension_amount'] - self.result['invoice']['allowance_total_amount']
         )
@@ -931,6 +966,12 @@ class Einvoice:
                 self.result['invoice']['net_total'] = (
                     self.sales_invoice_doc.paid_amount - self.sales_invoice_doc.total_taxes_and_charges
                 )
+        
+        # Ensure total_taxes_and_charges only contains actual VAT (since charges are now line items)
+        if self.sales_invoice_doc.doctype != 'Payment Entry':
+            self.result['invoice']['total_taxes_and_charges'] = self.result['invoice']['tax_total']['tax_amount']
+            self.result['invoice']['base_total_taxes_and_charges'] = self.result['invoice']['tax_total']['tax_amount']
+
         self.result['invoice']['grand_total'] = (
             self.result['invoice']['net_total'] + self.result['invoice']['total_taxes_and_charges']
         )
