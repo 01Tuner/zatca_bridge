@@ -761,11 +761,20 @@ class Einvoice:
         # Add charges from taxes table as item lines
         if getattr(doc, 'taxes', None):
             max_idx = max((it.get('idx', 0) for it in item_lines), default=0) if item_lines else 0
-            vat_rate = 15.0
+            
+            # Dynamically determine the VAT rate from the taxes table
+            vat_rate = 0.0
             for tax in doc.taxes:
-                if tax.rate > 0 or (tax.account_head and "VAT" in tax.account_head):
-                    vat_rate = tax.rate if tax.rate > 0 else 15.0
+                if tax.rate > 0:
+                    vat_rate = tax.rate
                     break
+            
+            # Fallback to item tax rate if not found in taxes table
+            if not vat_rate and doc.items:
+                for item in doc.items:
+                    if getattr(item, 'tax_rate', 0.0) > 0:
+                        vat_rate = item.tax_rate
+                        break
 
             for tax in doc.taxes:
                 if (not tax.rate or tax.rate == 0) and abs(tax.tax_amount) > 0:
